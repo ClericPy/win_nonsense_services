@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import ctypes
-import os
 import re
-from threading import Thread
+import subprocess
 
 import psutil
 import PySimpleGUI as sg
@@ -368,11 +367,7 @@ def get_help():
 
 
 def run_services():
-
-    def target():
-        os.system("services.msc")
-
-    Thread(target=target, daemon=True).start()
+    subprocess.Popen("services.msc", shell=True)
 
 
 def main():
