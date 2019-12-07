@@ -1,5 +1,9 @@
 # Windows服务优化工具
 
+## 程序原理
+
+比较简单, 就是把我尽量优化过后的系统剩余 running 的服务列出来. 肯定会有误杀, 所以 建议="无" 的先搜再关.
+
 ## 下载 exe
 
 https://github.com/ClericPy/win_nonsense_services/releases
