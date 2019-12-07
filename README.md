@@ -1,4 +1,8 @@
-# Windows服务优化工具
+# Windows 服务优化工具
+
+## 免责声明!!!!!!!!!
+
+自用优化工具, 优化有风险, 禁用需谨慎
 
 ## 程序原理
 
@@ -16,4 +20,5 @@ https://github.com/ClericPy/win_nonsense_services/releases
     2.1 禁用成功后, 再次点击 [刷新] 按钮, 可以看到改变
     2.2 如果遇到无法禁用的服务, 可以暂不处理
     2.3 无法禁用的服务, 需要在注册表编辑器 regedit 中专业操作
-        "计算机\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services"
+        2.3.1 "计算机\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services"
+        2.3.2 start_type, start, FailureActions 三个地方要动, 尤其第三个, 会导致 Windows Update 僵尸复活
