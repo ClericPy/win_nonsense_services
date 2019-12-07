@@ -3,6 +3,7 @@
 import ctypes
 import os
 import re
+from threading import Thread
 
 import psutil
 import PySimpleGUI as sg
@@ -366,6 +367,14 @@ def get_help():
 '''
 
 
+def run_services():
+
+    def target():
+        os.system("services.msc")
+
+    Thread(target=target, daemon=True).start()
+
+
 def main():
     layout = [[
         sg.Button(
@@ -383,7 +392,7 @@ def main():
         if event == 'refresh':
             window.FindElement('output').Update(get_text())
         elif event == 'serv':
-            os.system("services.msc")
+            run_services()
         elif event == 'help':
             window.FindElement('output').Update(get_help())
         elif event in (None, 'Cancel', 'Exit'):
