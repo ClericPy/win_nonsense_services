@@ -96,10 +96,14 @@ class Service(object):
 
     def update_failure_actions(self, enable):
         value = self.get_value('FailureActions')
+        if not value:
+            return False
         return value.update_failure_actions(enable)
 
     def check_failure_actions(self):
         value = self.get_value('FailureActions')
+        if not value:
+            return False
         _hex = value.value.hex()
         a, b = _hex[40:42], _hex[56:58]
         return (a, b) != ('00', '00')

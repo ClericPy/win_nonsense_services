@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "win_nonsense_services"
-version = "0.2.0"
+version = "0.3.0"
 description = "List non-core services"
 authors = ["Your Name <you@example.com>"]
 license = "MIT"

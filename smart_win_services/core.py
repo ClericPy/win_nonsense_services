@@ -343,7 +343,7 @@ def get_text():
         return '没有多余服务'
     result = []
     for i in items:
-        string = f'[全称]: {i["display_name"]}\n[名称]: {i["name"]}\n[启动]: {i["start_type"]}\n[建议]: {get_recommend(i)}\n[简介]: {i["description"]}'
+        string = f'[全称]: {i["display_name"]}\n[名称]: {i["name"]}\n[启动]: {i["start_type"]}\n[建议]: {get_recommend(i)}\n[进程]: {i["pid"]} "{i["binpath"]}"\n[简介]: {i["description"]}'
         result.append(string)
     sep = '\n' + '=' * 30 + '\n'
     text = f'总共 {len(result)} 个非核心服务' + sep
@@ -385,14 +385,18 @@ def get_st_fa(service_name):
     return start_type, fa
 
 
-def update_st_fa(service_name, start_type, failure_actions):
+def update_st_fa(values):
+    service_name = values['service_name'] or ''
+    service_name = service_name.strip()
     if not service_name:
         return ('', '')
-    serv = Service(service_name.strip())
+    serv = Service(service_name)
     if not serv.key:
         return ('', '')
+    start_type = values['start_type']
     if start_type:
         serv.update_start_type(start_type)
+    failure_actions = values['failure_actions']
     if failure_actions:
         enable = True if failure_actions == '启用' else False
         serv.update_failure_actions(enable)
@@ -403,6 +407,15 @@ def refresh_reg_window(window, values):
     st, fa = get_st_fa(service_name)
     window.FindElement('start_type').Update(st)
     window.FindElement('failure_actions').Update(fa)
+    try:
+        pid = psutil.win_service_get(service_name).pid() if service_name else '0'
+    except psutil.NoSuchProcess:
+        pid = '0'
+    window.FindElement('service_pid').Update(pid)
+
+
+def refresh_output(window):
+    window.FindElement('output').Update(get_text())
 
 
 def main():
@@ -426,45 +439,51 @@ def main():
         sg.Text('启动类型'),
         sg.InputCombo(['', '自动(延迟启动)', '自动', '手动', '禁用'],
                       change_submits=True,
-                      size=(10, 2),
+                      size=(6, 2),
                       key='start_type'),
         sg.Text('FailureActions'),
         sg.InputCombo(['', '启用', '禁用'],
                       change_submits=True,
-                      size=(10, 2),
+                      size=(6, 2),
                       key='failure_actions'),
+        sg.Text('PID'),
+        sg.Input(size=(6, 1), key='service_pid'),
+        sg.Button(
+            'KILL', size=(4, 1), button_color=('red', 'white'), key='kill_pid'),
     ], [sg.Output(size=(999, 999), key='output', font=("", 16))]]
     try:
         Service('W32Time').get_key()
     except PermissionError:
-        layout[0].pop(-1)
-        layout[0].pop(-1)
-        layout[0].pop(-1)
-        layout[0].pop(-1)
-        layout[0].pop(-1)
-        layout[0].pop(-1)
+        layout[0] = layout[0][:4]
         layout[0].append(sg.Text('非管理员模式, 无法修改', text_color='red'))
     window = sg.Window(title='服务优化工具', layout=layout, size=WINDOW_SIZE)
+    window.Read(timeout=0)
+    refresh_output(window)
     while 1:
         event, values = window.Read()
         # print(event, values)
         if event == 'refresh':
-            window.FindElement('output').Update(get_text())
+            refresh_output(window)
         elif event == 'serv':
             run_services()
         elif event == 'help':
             window.FindElement('output').Update(get_help())
         elif event == 'service_name':
             refresh_reg_window(window, values)
-        elif event in {'start_type', 'failure_actions'}:
-            service_name = values['service_name']
-            start_type = values['start_type']
-            failure_actions = values['failure_actions']
-            # if not (start_type and failure_actions):
-            #     continue
-            update_st_fa(service_name, start_type, failure_actions)
+        elif event == 'kill_pid':
+            pid = values.get('service_pid') or 0
+            if pid and int(pid):
+                try:
+                    psutil.Process(int(pid)).kill()
+                except psutil.NoSuchProcess:
+                    pass
+            update_st_fa(values)
             refresh_reg_window(window, values)
-            window.FindElement('output').Update(get_text())
+            refresh_output(window)
+        elif event in {'start_type', 'failure_actions'}:
+            update_st_fa(values)
+            refresh_reg_window(window, values)
+            refresh_output(window)
         elif event in (None, 'Cancel', 'Exit'):
             break
     window.Close()
