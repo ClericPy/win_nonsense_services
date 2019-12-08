@@ -1,4 +1,4 @@
-# Windows 服务优化工具 v0.2.0
+# Windows 服务优化工具 v0.3.0
 
 ## 免责声明!!!!!!!!!
 
@@ -33,3 +33,9 @@ https://github.com/ClericPy/win_nonsense_services/releases
     3. 必要时需要禁用 FailureActions
 
 ![](demo.png)
+
+## 进度
+
+- [x] 显示冗余服务列表
+- [x] 支持调整服务启动类型和失败操作
+- [x] 杀死服务进程
