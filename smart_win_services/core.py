@@ -7,6 +7,8 @@ import subprocess
 import psutil
 import PySimpleGUI as sg
 
+from .reg import Service
+
 OKS = {
     'Appinfo': '手动',
     'AudioEndpointBuilder': '自动',
@@ -327,13 +329,12 @@ def get_recommend(i):
 
 def get_text():
     items = []
+    alias = {'automatic': '自动', 'manual': '手动', 'disabled': '禁用'}
     for i in psutil.win_service_iter():
         try:
             item = i.as_dict()
-            item['start_type'] = {
-                'automatic': '自动',
-                'manual': '手动'
-            }.get(item['start_type'], item['start_type'])
+            item['start_type'] = alias.get(item['start_type'],
+                                           item['start_type'])
             if item['status'] == 'running' and item['name'] not in OKS:
                 items.append(item)
         except psutil.NoSuchProcess:
@@ -362,7 +363,10 @@ def get_help():
     2.3 无法禁用的服务, 需要在注册表编辑器 regedit 中专业操作
         "计算机\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services"
 
-3. 没了, 就是喜欢说三段论
+3. 对列出的服务自行判断是否可关闭
+    3.1 如果需要关闭, 首先要保证是管理员模式启动
+    3.2 将 '服务名称' 填入输入框, 自行选择是否禁用
+    3.3 必要时需要禁用 FailureActions
 '''
 
 
@@ -370,7 +374,40 @@ def run_services():
     subprocess.Popen("services.msc", shell=True)
 
 
+def get_st_fa(service_name):
+    if not service_name:
+        return ('', '')
+    serv = Service(service_name.strip())
+    if not serv.key:
+        return ('', '')
+    start_type = serv.check_start_type()
+    fa = '启用' if serv.check_failure_actions() else '禁用'
+    return start_type, fa
+
+
+def update_st_fa(service_name, start_type, failure_actions):
+    if not service_name:
+        return ('', '')
+    serv = Service(service_name.strip())
+    if not serv.key:
+        return ('', '')
+    if start_type:
+        serv.update_start_type(start_type)
+    if failure_actions:
+        enable = True if failure_actions == '启用' else False
+        serv.update_failure_actions(enable)
+
+
+def refresh_reg_window(window, values):
+    service_name = values['service_name']
+    st, fa = get_st_fa(service_name)
+    window.FindElement('start_type').Update(st)
+    window.FindElement('failure_actions').Update(fa)
+
+
 def main():
+    # show_me()
+    # return
     layout = [[
         sg.Button(
             '刷新', size=(10, 2), button_color=('black', 'white'), key='refresh'),
@@ -379,17 +416,55 @@ def main():
         sg.Button(
             '退出', size=(10, 2), button_color=('black', 'white'), key='Exit'),
         sg.Button(
-            '帮助', size=(10, 2), button_color=('black', 'white'), key='help')
+            '帮助', size=(10, 2), button_color=('black', 'white'), key='help'),
+        sg.Text('服务名称\n(注册表):', size=(10, 2)),
+        sg.Input(
+            key='service_name',
+            size=(15, 1),
+            change_submits=True,
+            tooltip='填入名称, 而不是全称'),
+        sg.Text('启动类型'),
+        sg.InputCombo(['', '自动(延迟启动)', '自动', '手动', '禁用'],
+                      change_submits=True,
+                      size=(10, 2),
+                      key='start_type'),
+        sg.Text('FailureActions'),
+        sg.InputCombo(['', '启用', '禁用'],
+                      change_submits=True,
+                      size=(10, 2),
+                      key='failure_actions'),
     ], [sg.Output(size=(999, 999), key='output', font=("", 16))]]
+    try:
+        Service('W32Time').get_key()
+    except PermissionError:
+        layout[0].pop(-1)
+        layout[0].pop(-1)
+        layout[0].pop(-1)
+        layout[0].pop(-1)
+        layout[0].pop(-1)
+        layout[0].pop(-1)
+        layout[0].append(sg.Text('非管理员模式, 无法修改', text_color='red'))
     window = sg.Window(title='服务优化工具', layout=layout, size=WINDOW_SIZE)
     while 1:
         event, values = window.Read()
+        # print(event, values)
         if event == 'refresh':
             window.FindElement('output').Update(get_text())
         elif event == 'serv':
             run_services()
         elif event == 'help':
             window.FindElement('output').Update(get_help())
+        elif event == 'service_name':
+            refresh_reg_window(window, values)
+        elif event in {'start_type', 'failure_actions'}:
+            service_name = values['service_name']
+            start_type = values['start_type']
+            failure_actions = values['failure_actions']
+            # if not (start_type and failure_actions):
+            #     continue
+            update_st_fa(service_name, start_type, failure_actions)
+            refresh_reg_window(window, values)
+            window.FindElement('output').Update(get_text())
         elif event in (None, 'Cancel', 'Exit'):
             break
     window.Close()
@@ -397,4 +472,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # show_me()

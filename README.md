@@ -1,4 +1,4 @@
-# Windows 服务优化工具
+# Windows 服务优化工具 v0.2.0
 
 ## 免责声明!!!!!!!!!
 
@@ -8,9 +8,15 @@
 
 比较简单, 就是把我尽量优化过后的系统剩余 running 的服务列出来. 肯定会有误杀, 所以 建议="无" 的先搜再关.
 
-## 下载 exe
+然后通过 **winreg** 内置库对注册表进行修改, 避免 **services.msc** 权限不够.
+
+## 使用方法
+
+1. 下载 exe
 
 https://github.com/ClericPy/win_nonsense_services/releases
+
+2. 或者下载源码, 执行 python run.pyw
 
 ## 使用说明:
 
@@ -22,3 +28,9 @@ https://github.com/ClericPy/win_nonsense_services/releases
     2.3 无法禁用的服务, 需要在注册表编辑器 regedit 中专业操作
         2.3.1 "计算机\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services"
         2.3.2 start_type, start, FailureActions 三个地方要动, 尤其第三个, 会导致 Windows Update 僵尸复活
+
+3. 对列出的服务自行判断是否可关闭
+    3.1 如果需要关闭, 首先要保证是**管理员模式**启动
+    3.2 将 '服务名称' 填入输入框, 自行选择是否禁用
+    3.3 必要时需要禁用 FailureActions
+
