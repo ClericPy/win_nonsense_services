@@ -32,3 +32,4 @@ https://github.com/ClericPy/win_nonsense_services/releases
     2. 将 '服务名称' 填入输入框, 自行选择是否禁用
     3. 必要时需要禁用 FailureActions
 
+![](demo.png)
