@@ -6,7 +6,7 @@ import subprocess
 
 import psutil
 import PySimpleGUI as sg
-
+from PySimpleGUI.PySimpleGUI import _BuildResults
 from .reg import Service
 
 OKS = {
@@ -305,7 +305,7 @@ def show_me():
                                            item['start_type'])
             if item['status'] == 'running':
                 OKS[item['name']] = item['start_type']
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, FileNotFoundError):
             pass
     print('OKS = ', OKS)
     NOT_OKS = {}
@@ -316,7 +316,7 @@ def show_me():
                                            item['start_type'])
             if item['name'] not in OKS:
                 NOT_OKS[item['name']] = item['start_type']
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, FileNotFoundError):
             pass
     print('NOT_OKS = ', NOT_OKS)
 
@@ -337,7 +337,7 @@ def get_text():
                                            item['start_type'])
             if item['status'] == 'running' and item['name'] not in OKS:
                 items.append(item)
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, FileNotFoundError):
             pass
     if not items:
         return '没有多余服务'
@@ -385,7 +385,8 @@ def get_st_fa(service_name):
     return start_type, fa
 
 
-def update_st_fa(values):
+def update_st_fa(window):
+    _, values = _BuildResults(window, False, window)
     service_name = values['service_name'] or ''
     service_name = service_name.strip()
     if not service_name:
@@ -402,14 +403,16 @@ def update_st_fa(values):
         serv.update_failure_actions(enable)
 
 
-def refresh_reg_window(window, values):
+def refresh_reg_window(window):
+    _, values = _BuildResults(window, False, window)
     service_name = values['service_name']
     st, fa = get_st_fa(service_name)
     window.FindElement('start_type').Update(st)
     window.FindElement('failure_actions').Update(fa)
     try:
-        pid = psutil.win_service_get(service_name).pid() if service_name else '0'
-    except psutil.NoSuchProcess:
+        pid = psutil.win_service_get(
+            service_name).pid() if service_name else '0'
+    except (psutil.NoSuchProcess, FileNotFoundError):
         pid = '0'
     window.FindElement('service_pid').Update(pid)
 
@@ -418,7 +421,7 @@ def refresh_output(window):
     window.FindElement('output').Update(get_text())
 
 
-def main():
+def _main():
     # show_me()
     # return
     layout = [[
@@ -469,24 +472,31 @@ def main():
         elif event == 'help':
             window.FindElement('output').Update(get_help())
         elif event == 'service_name':
-            refresh_reg_window(window, values)
+            refresh_reg_window(window)
         elif event == 'kill_pid':
             pid = values.get('service_pid') or 0
             if pid and int(pid):
                 try:
                     psutil.Process(int(pid)).kill()
-                except psutil.NoSuchProcess:
-                    pass
-            update_st_fa(values)
-            refresh_reg_window(window, values)
+                except Exception as err:
+                    sg.PopupOK(repr(err))
+            window.FindElement('service_pid').Update('0')
+            refresh_reg_window(window)
             refresh_output(window)
         elif event in {'start_type', 'failure_actions'}:
-            update_st_fa(values)
-            refresh_reg_window(window, values)
+            update_st_fa(window)
+            refresh_reg_window(window)
             refresh_output(window)
         elif event in (None, 'Cancel', 'Exit'):
             break
     window.Close()
+
+
+def main():
+    try:
+        _main()
+    except Exception as err:
+        sg.PopupOK(repr(err), title='error')
 
 
 if __name__ == "__main__":
