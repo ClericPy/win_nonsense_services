@@ -484,9 +484,12 @@ def _main():
             refresh_reg_window(window)
             refresh_output(window)
         elif event in {'start_type', 'failure_actions'}:
-            update_st_fa(window)
-            refresh_reg_window(window)
-            refresh_output(window)
+            try:
+                update_st_fa(window)
+                refresh_reg_window(window)
+                refresh_output(window)
+            except Exception as err:
+                sg.PopupOK(repr(err))
         elif event in (None, 'Cancel', 'Exit'):
             break
     window.Close()
