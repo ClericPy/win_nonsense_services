@@ -1,3 +1,5 @@
 from .core import main
 
-__version__ = '0.3.0'
+
+__all__ = ['main']
+__version__ = '0.3.1'

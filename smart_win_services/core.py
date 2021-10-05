@@ -292,7 +292,7 @@ NOT_OKS = {
 user32 = ctypes.windll.user32
 # (2560, 1440)
 screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
-WINDOW_SIZE = list(int(i * 0.5) for i in screensize)
+WINDOW_SIZE = [int(screensize[0] * 0.6), int(screensize[1] * 0.6)]
 
 
 def show_me():
@@ -425,20 +425,27 @@ def _main():
     # show_me()
     # return
     layout = [[
-        sg.Button(
-            '刷新', size=(10, 2), button_color=('black', 'white'), key='refresh'),
-        sg.Button(
-            '服务', size=(10, 2), button_color=('black', 'white'), key='serv'),
-        sg.Button(
-            '退出', size=(10, 2), button_color=('black', 'white'), key='Exit'),
-        sg.Button(
-            '帮助', size=(10, 2), button_color=('black', 'white'), key='help'),
+        sg.Button('刷新',
+                  size=(10, 2),
+                  button_color=('black', 'white'),
+                  key='refresh'),
+        sg.Button('服务',
+                  size=(10, 2),
+                  button_color=('black', 'white'),
+                  key='serv'),
+        sg.Button('退出',
+                  size=(10, 2),
+                  button_color=('black', 'white'),
+                  key='Exit'),
+        sg.Button('帮助',
+                  size=(10, 2),
+                  button_color=('black', 'white'),
+                  key='help'),
         sg.Text('服务名称\n(注册表):', size=(10, 2)),
-        sg.Input(
-            key='service_name',
-            size=(15, 1),
-            change_submits=True,
-            tooltip='填入名称, 而不是全称'),
+        sg.Input(key='service_name',
+                 size=(15, 1),
+                 change_submits=True,
+                 tooltip='填入名称, 而不是全称'),
         sg.Text('启动类型'),
         sg.InputCombo(['', '自动(延迟启动)', '自动', '手动', '禁用'],
                       change_submits=True,
@@ -451,15 +458,20 @@ def _main():
                       key='failure_actions'),
         sg.Text('PID'),
         sg.Input(size=(6, 1), key='service_pid'),
-        sg.Button(
-            'KILL', size=(4, 1), button_color=('red', 'white'), key='kill_pid'),
+        sg.Button('KILL',
+                  size=(4, 1),
+                  button_color=('red', 'white'),
+                  key='kill_pid'),
     ], [sg.Output(size=(999, 999), key='output', font=("", 16))]]
     try:
         Service('W32Time').get_key()
     except PermissionError:
         layout[0] = layout[0][:4]
         layout[0].append(sg.Text('非管理员模式, 无法修改', text_color='red'))
-    window = sg.Window(title='服务优化工具', layout=layout, size=WINDOW_SIZE)
+    window = sg.Window(title='服务优化工具',
+                       layout=layout,
+                       size=WINDOW_SIZE,
+                       resizable=True)
     window.Read(timeout=0)
     refresh_output(window)
     while 1:
