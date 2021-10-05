@@ -404,21 +404,22 @@ def update_st_fa(window):
 
 
 def refresh_reg_window(window):
-    _, values = _BuildResults(window, False, window)
-    service_name = values['service_name']
-    st, fa = get_st_fa(service_name)
-    window.FindElement('start_type').Update(st)
-    window.FindElement('failure_actions').Update(fa)
     try:
+        _, values = _BuildResults(window, False, window)
+        service_name = values['service_name']
+        st, fa = get_st_fa(service_name)
+        window.find_element('start_type').Update(st)
+        window.find_element('failure_actions').Update(fa)
         pid = psutil.win_service_get(
             service_name).pid() if service_name else '0'
-    except (psutil.NoSuchProcess, FileNotFoundError):
+    except (psutil.NoSuchProcess, FileNotFoundError, PermissionError) as err:
         pid = '0'
-    window.FindElement('service_pid').Update(pid)
+        sg.PopupOK(repr(err), title='error')
+    window.find_element('service_pid').Update(pid)
 
 
 def refresh_output(window):
-    window.FindElement('output').Update(get_text())
+    window.find_element('output').Update(get_text())
 
 
 def _main():
@@ -482,7 +483,7 @@ def _main():
         elif event == 'serv':
             run_services()
         elif event == 'help':
-            window.FindElement('output').Update(get_help())
+            window.find_element('output').Update(get_help())
         elif event == 'service_name':
             refresh_reg_window(window)
         elif event == 'kill_pid':
@@ -492,7 +493,7 @@ def _main():
                     psutil.Process(int(pid)).kill()
                 except Exception as err:
                     sg.PopupOK(repr(err))
-            window.FindElement('service_pid').Update('0')
+            window.find_element('service_pid').Update('0')
             refresh_reg_window(window)
             refresh_output(window)
         elif event in {'start_type', 'failure_actions'}:
